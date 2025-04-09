@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # Bases de datos
+  neo4j:
+    image: neo4j:latest
+    ports:
+      - "7474:7474"  # Interfaz web
+      - "7687:7687"  # Protocolo Bolt
+    volumes:
+      - ./databases/neo4j/data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/password
+
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    volumes:
+      - ./databases/cassandra/data:/var/lib/cassandra
+    environment:
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./databases/mongodb/data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=jotun_wiki
+
+  redis:
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"  # Redis core
+      - "8001:8001"  # RedisInsight
+    volumes:
+      - ./databases/redis/data:/data
+
+  # Servicios de aplicación
+  editor-service:
+    build: ./services/editor-service
+    depends_on:
+      - neo4j
+    ports:
+      - "8081:8080"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password
+    volumes:
+      - ./services/editor-service:/app
+      - /app/node_modules
+
+  leaderboard-service:
+    build: ./services/leaderboard-service
+    depends_on:
+      - cassandra
+    ports:
+      - "8082:8080"
+    environment:
+      - CASSANDRA_CONTACT_POINTS=cassandra:9042
+    volumes:
+      - ./services/leaderboard-service:/app
+      - /app/node_modules
+
+  wiki-service:
+    build: ./services/wiki-service
+    depends_on:
+      - mongodb
+    ports:
+      - "8083:8080"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/jotun_wiki
+    volumes:
+      - ./services/wiki-service:/app
+      - /app/node_modules
+
+  avatar-service:
+    build: ./services/avatar-service
+    depends_on:
+      - redis
+    ports:
+      - "8084:8080"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./services/avatar-service:/app
+      - ./assets/avatars:/app/assets/avatars
+      - /app/node_modules
+
+  # API Gateway
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - editor-service
+      - leaderboard-service
+      - wiki-service
+      - avatar-service
+    environment:
+      - EDITOR_SERVICE_URL=http://editor-service:8080
+      - LEADERBOARD_SERVICE_URL=http://leaderboard-service:8080
+      - WIKI_SERVICE_URL=http://wiki-service:8080
+      - AVATAR_SERVICE_URL=http://avatar-service:8080
+      - JWT_SECRET=your-secret-key
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+
+volumes:
+  neo4j_data:
+  cassandra_data:
+  mongo_data:
+  redis_data:
