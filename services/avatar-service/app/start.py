@@ -47,7 +47,7 @@ def load_initial_avatars(force=False):
         print("Cargando avatares iniciales...")
         try:
             avatars_dir = os.environ.get("AVATARS_DIR", "./assets/avatars")
-            metadata_file = os.environ.get("METADATA_FILE", "./assets/metadata.json")
+            metadata_file = os.environ.get("METADATA_FILE", "")
             
             if not os.path.exists(avatars_dir):
                 print(f"Directorio de avatares no encontrado: {avatars_dir}")
