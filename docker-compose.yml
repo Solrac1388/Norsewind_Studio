@@ -87,6 +87,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - LOAD_AVATARS_ON_STARTUP=true
     volumes:
       - ./services/avatar-service:/app
       - ./assets/avatars:/app/assets/avatars

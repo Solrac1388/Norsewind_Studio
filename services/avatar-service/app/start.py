@@ -41,7 +41,7 @@ def check_redis_has_avatars():
 
 def load_initial_avatars(force=False):
     has_avatars = check_redis_has_avatars()
-    force_load = os.environ.get("LOAD_AVATARS_ON_STARTUP", "false").lower() == "true"
+    force_load = os.environ.get("LOAD_AVATARS_ON_STARTUP", "true").lower() == "true"
     
     if not has_avatars or force_load or force:
         print("Cargando avatares iniciales...")
