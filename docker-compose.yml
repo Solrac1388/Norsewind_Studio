@@ -61,10 +61,19 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - CASSANDRA_CONTACT_POINTS=cassandra:9042
+      - CASSANDRA_CONTACT_POINTS=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=jotun_lair
+      - CASSANDRA_REPLICATION_FACTOR=3
     volumes:
       - ./services/leaderboard-service:/app
-      - /app/node_modules
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   wiki-service:
     build: ./services/wiki-service
