@@ -88,9 +88,11 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - LOAD_AVATARS_ON_STARTUP=true
+      - METADATA_FILE=/app/assets/metadata.json
     volumes:
       - ./services/avatar-service:/app
       - ./assets/avatars:/app/assets/avatars
+      - ./assets:/app/assets
       - /app/node_modules
 
   # API Gateway
