@@ -1,5 +1,6 @@
 import redis
 import numpy as np
+from redis.commands.search.query import Query
 
 class RedisService:
     def __init__(self, host="localhost", port=6379, password=None):
