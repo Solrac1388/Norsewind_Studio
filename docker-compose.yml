@@ -21,6 +21,12 @@ services:
     environment:
       - MAX_HEAP_SIZE=512M
       - HEAP_NEWSIZE=100M
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   mongodb:
     image: mongo:latest
@@ -57,7 +63,8 @@ services:
   leaderboard-service:
     build: ./services/leaderboard-service
     depends_on:
-      - cassandra
+      cassandra:
+        condition: service_healthy
     ports:
       - "8082:8080"
     environment:
