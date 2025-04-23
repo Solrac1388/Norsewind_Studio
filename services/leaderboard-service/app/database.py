@@ -2,24 +2,28 @@ import os
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
 from cassandra.query import SimpleStatement
+from cassandra.policies import RoundRobinPolicy
 import logging
 from .config import CASSANDRA_CONTACT_POINTS, CASSANDRA_PORT, CASSANDRA_KEYSPACE, REPLICATION_FACTOR
-from cassandra.policies import RoundRobinPolicy
 
 logger = logging.getLogger(__name__)
 
 class CassandraDB:
     def __init__(self):
-        self.cluster = Cluster(self.contact_points, port=self.port, load_balancing_policy=RoundRobinPolicy())
-        self.session = None
         self.keyspace = CASSANDRA_KEYSPACE
         self.contact_points = CASSANDRA_CONTACT_POINTS.split(",")
         self.port = CASSANDRA_PORT
+        self.cluster = None
+        self.session = None
         
     async def connect(self):
         """Connect to Cassandra cluster and initialize session"""
         try:
-            self.cluster = Cluster(self.contact_points, port=self.port)
+            self.cluster = Cluster(
+                self.contact_points, 
+                port=self.port,
+                load_balancing_policy=RoundRobinPolicy()
+            )
             self.session = self.cluster.connect()
             
             # Create keyspace if it doesn't exist
