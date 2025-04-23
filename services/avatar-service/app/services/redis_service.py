@@ -72,12 +72,14 @@ class RedisService:
         
     def find_similar_avatars(self, embedding, top_k=5):
         embedding_bytes = embedding.astype(np.float32).tobytes()
-        
-        query = f"@embedding:[KNN {top_k} $embedding]"
-        params = {"embedding": embedding_bytes}
-        
+        query = (
+            Query(f"(*)=>[KNN {top_k} @embedding $embedding_param AS vector_score]")
+            .dialect(2)
+        )
+        params = {"embedding_param": embedding_bytes}
+
         results = self.client.ft("avatar_idx").search(query, params).docs
-        
+
         avatars = []
         for res in results:
             avatars.append({
@@ -87,7 +89,7 @@ class RedisService:
                 "race": res["race"],
                 "job": res["job"],
                 "age": int(res["age"]),
-                "similarity": 1.0 - float(res["__embedding_score"])
+                "similarity": 1.0 - float(res["vector_score"])
             })
-            
         return avatars
+
