@@ -73,7 +73,7 @@ class RedisService:
     def find_similar_avatars(self, embedding, top_k=5):
         embedding_bytes = embedding.astype(np.float32).tobytes()
         
-        query = f"*=>[KNN {top_k} @embedding $embedding AS score]"
+        query = f"@embedding:[KNN {top_k} $embedding]"
         params = {"embedding": embedding_bytes}
         
         results = self.client.ft("avatar_idx").search(query, params).docs
