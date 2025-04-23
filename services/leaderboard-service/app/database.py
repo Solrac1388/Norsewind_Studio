@@ -4,12 +4,13 @@ from cassandra.auth import PlainTextAuthProvider
 from cassandra.query import SimpleStatement
 import logging
 from .config import CASSANDRA_CONTACT_POINTS, CASSANDRA_PORT, CASSANDRA_KEYSPACE, REPLICATION_FACTOR
+from cassandra.policies import RoundRobinPolicy
 
 logger = logging.getLogger(__name__)
 
 class CassandraDB:
     def __init__(self):
-        self.cluster = None
+        self.cluster = Cluster(self.contact_points, port=self.port, load_balancing_policy=RoundRobinPolicy())
         self.session = None
         self.keyspace = CASSANDRA_KEYSPACE
         self.contact_points = CASSANDRA_CONTACT_POINTS.split(",")
