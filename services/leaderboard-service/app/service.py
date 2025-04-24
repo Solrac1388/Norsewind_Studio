@@ -13,7 +13,7 @@ class LeaderboardService:
         try:
             query = SimpleStatement(
                 "SELECT dungeon_id, avg_minutes FROM player_stats WHERE email = %s AND year = %s",
-                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+                consistency_level=ConsistencyLevel.ONE
             )
             
             rows = cassandra_db.session.execute(query, (email, year))
@@ -54,7 +54,7 @@ class LeaderboardService:
             for year, month in months:
                 query = SimpleStatement(
                     "SELECT email, user_name, minutes, date FROM hall_of_fame WHERE country = %s AND dungeon_id = %s AND year = %s AND month = %s LIMIT 5",
-                    consistency_level=ConsistencyLevel.LOCAL_QUORUM
+                    consistency_level=ConsistencyLevel.ONE
                 )
                 
                 rows = cassandra_db.session.execute(query, (country, dungeon_id, year, month))
@@ -80,7 +80,7 @@ class LeaderboardService:
         try:
             query = SimpleStatement(
                 "SELECT user_id, user_name, email, n_killed FROM horde_ranking WHERE event_id = %s AND country = %s LIMIT 50",
-                consistency_level=ConsistencyLevel.ONE  # Menor consistencia para rankings de horda
+                consistency_level=ConsistencyLevel.ONE
             )
             
             rows = cassandra_db.session.execute(query, (event_id, country))
@@ -102,20 +102,6 @@ class LeaderboardService:
     @staticmethod
     async def record_dungeon_completion(email: str, dungeon_id: int, time_minutes: float, date_str: str):
         """Record a dungeon completion"""
-        # Implementación del registro de completación de mazmorra
-        # [Código de implementación para actualizar hall_of_fame y player_stats]
-        pass
-    
-    @staticmethod
-    async def record_monster_kill(email: str, event_id: int, monster_id: int):
-        """Record a monster kill in a horde event"""
-        # Implementación del registro de muertes de monstruos
-        # [Código de implementación para actualizar horde_ranking]
-        pass
-        
-    @staticmethod
-    async def record_dungeon_completion(email: str, dungeon_id: int, time_minutes: float, date_str: str):
-        """Record a dungeon completion"""
         try:
             # Parse date string
             date = datetime.fromisoformat(date_str)
@@ -123,7 +109,7 @@ class LeaderboardService:
             # Get user info from system_auth.roles (simplified example)
             user_query = SimpleStatement(
                 "SELECT role FROM system_auth.roles WHERE role = %s",
-                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+                consistency_level=ConsistencyLevel.ONE
             )
             user_rows = cassandra_db.session.execute(user_query, (email,))
             user_name = email.split('@')[0]  # Fallback if user not found
@@ -144,7 +130,7 @@ class LeaderboardService:
                 (country, dungeon_id, year, month, email, user_name, minutes, date)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
-                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+                consistency_level=ConsistencyLevel.ONE
             )
             
             cassandra_db.session.execute(
@@ -159,7 +145,7 @@ class LeaderboardService:
                 FROM player_stats 
                 WHERE email = %s AND year = %s AND dungeon_id = %s
                 """,
-                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+                consistency_level=ConsistencyLevel.ONE
             )
             
             stats_rows = cassandra_db.session.execute(stats_query, (email, year, dungeon_id))
@@ -182,7 +168,7 @@ class LeaderboardService:
                 SET avg_minutes = %s, completed_count = %s 
                 WHERE email = %s AND year = %s AND dungeon_id = %s
                 """,
-                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+                consistency_level=ConsistencyLevel.ONE
             )
             
             cassandra_db.session.execute(
@@ -225,34 +211,26 @@ class LeaderboardService:
             )
             
             rows = cassandra_db.session.execute(check_query, (event_id, country, user_id))
+            row = rows.one()
             
-            if rows.one() is not None:
-                # User exists in ranking, update kill count
-                update_query = SimpleStatement(
-                    """
-                    UPDATE horde_ranking 
-                    SET n_killed = n_killed + 1 
-                    WHERE event_id = %s AND country = %s AND user_id = %s
-                    """,
-                    consistency_level=ConsistencyLevel.ONE
-                )
-                
-                cassandra_db.session.execute(update_query, (event_id, country, user_id))
-            else:
-                # First kill for this user in this event
-                insert_query = SimpleStatement(
-                    """
-                    INSERT INTO horde_ranking 
-                    (event_id, country, user_id, user_name, email, n_killed) 
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    """,
-                    consistency_level=ConsistencyLevel.ONE
-                )
-                
-                cassandra_db.session.execute(
-                    insert_query,
-                    (event_id, country, user_id, user_name, email, 1)
-                )
+            n_killed = 1
+            if row is not None:
+                n_killed = row.n_killed + 1
+            
+            # Siempre insertar un nuevo registro con el count actualizado
+            insert_query = SimpleStatement(
+                """
+                INSERT INTO horde_ranking 
+                (event_id, country, user_id, user_name, email, n_killed) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                consistency_level=ConsistencyLevel.ONE
+            )
+            
+            cassandra_db.session.execute(
+                insert_query,
+                (event_id, country, user_id, user_name, email, n_killed)
+            )
             
             return True
         except Exception as e:

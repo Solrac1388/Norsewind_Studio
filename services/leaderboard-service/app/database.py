@@ -65,6 +65,7 @@ class CassandraDB:
             )
             """)
             
+            # Modificar la tabla horde_ranking para que n_killed no sea parte de la clave primaria
             self.session.execute("""
             CREATE TABLE IF NOT EXISTS horde_ranking (
               event_id int,
@@ -73,8 +74,8 @@ class CassandraDB:
               user_name text,
               email text,
               n_killed int,
-              PRIMARY KEY ((event_id, country), n_killed, user_id)
-            ) WITH CLUSTERING ORDER BY (n_killed DESC)
+              PRIMARY KEY ((event_id, country), user_id)
+            )
             """)
             
             logger.info("Tables created successfully")
