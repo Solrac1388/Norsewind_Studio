@@ -22,7 +22,8 @@ class CassandraDB:
             self.cluster = Cluster(
                 self.contact_points, 
                 port=self.port,
-                load_balancing_policy=RoundRobinPolicy()
+                load_balancing_policy=RoundRobinPolicy(),
+                protocol_version=5  # Establecer explícitamente la versión del protocolo
             )
             self.session = self.cluster.connect()
             

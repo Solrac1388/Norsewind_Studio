@@ -112,3 +112,149 @@ class LeaderboardService:
         # Implementación del registro de muertes de monstruos
         # [Código de implementación para actualizar horde_ranking]
         pass
+        
+    @staticmethod
+    async def record_dungeon_completion(email: str, dungeon_id: int, time_minutes: float, date_str: str):
+        """Record a dungeon completion"""
+        try:
+            # Parse date string
+            date = datetime.fromisoformat(date_str)
+            
+            # Get user info from system_auth.roles (simplified example)
+            user_query = SimpleStatement(
+                "SELECT role FROM system_auth.roles WHERE role = %s",
+                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+            )
+            user_rows = cassandra_db.session.execute(user_query, (email,))
+            user_name = email.split('@')[0]  # Fallback if user not found
+            for user_row in user_rows:
+                user_name = user_row.role
+            
+            # Get current year and month
+            year = date.year
+            month = date.month
+            
+            # Get country (simplified example - would come from user data)
+            country = "global"  # Default value
+            
+            # Insert into hall_of_fame
+            hall_query = SimpleStatement(
+                """
+                INSERT INTO hall_of_fame 
+                (country, dungeon_id, year, month, email, user_name, minutes, date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+            )
+            
+            cassandra_db.session.execute(
+                hall_query, 
+                (country, dungeon_id, year, month, email, user_name, time_minutes, date)
+            )
+            
+            # Update player stats - first get current stats if they exist
+            stats_query = SimpleStatement(
+                """
+                SELECT avg_minutes, completed_count 
+                FROM player_stats 
+                WHERE email = %s AND year = %s AND dungeon_id = %s
+                """,
+                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+            )
+            
+            stats_rows = cassandra_db.session.execute(stats_query, (email, year, dungeon_id))
+            
+            avg_minutes = time_minutes
+            completed_count = 1
+            
+            # Calculate new average if stats exist
+            for stats_row in stats_rows:
+                if stats_row.completed_count is not None:
+                    old_avg = stats_row.avg_minutes
+                    old_count = stats_row.completed_count
+                    completed_count = old_count + 1
+                    avg_minutes = ((old_avg * old_count) + time_minutes) / completed_count
+            
+            # Update player stats
+            update_stats_query = SimpleStatement(
+                """
+                UPDATE player_stats 
+                SET avg_minutes = %s, completed_count = %s 
+                WHERE email = %s AND year = %s AND dungeon_id = %s
+                """,
+                consistency_level=ConsistencyLevel.LOCAL_QUORUM
+            )
+            
+            cassandra_db.session.execute(
+                update_stats_query,
+                (avg_minutes, completed_count, email, year, dungeon_id)
+            )
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to record dungeon completion: {str(e)}")
+            raise e
+
+    @staticmethod
+    async def record_monster_kill(email: str, event_id: int, monster_id: int):
+        """Record a monster kill in a horde event"""
+        try:
+            # Get user info
+            user_query = SimpleStatement(
+                "SELECT role FROM system_auth.roles WHERE role = %s",
+                consistency_level=ConsistencyLevel.ONE
+            )
+            user_rows = cassandra_db.session.execute(user_query, (email,))
+            
+            user_name = email.split('@')[0]  # Fallback username
+            user_id = abs(hash(email)) % (10**9)  # Generate consistent user_id from email
+            
+            for user_row in user_rows:
+                user_name = user_row.role
+            
+            # Get country (simplified - would normally come from user profile)
+            country = "global"
+            
+            # First check if user already has kills in this event
+            check_query = SimpleStatement(
+                """
+                SELECT n_killed FROM horde_ranking 
+                WHERE event_id = %s AND country = %s AND user_id = %s
+                """,
+                consistency_level=ConsistencyLevel.ONE
+            )
+            
+            rows = cassandra_db.session.execute(check_query, (event_id, country, user_id))
+            
+            if rows.one() is not None:
+                # User exists in ranking, update kill count
+                update_query = SimpleStatement(
+                    """
+                    UPDATE horde_ranking 
+                    SET n_killed = n_killed + 1 
+                    WHERE event_id = %s AND country = %s AND user_id = %s
+                    """,
+                    consistency_level=ConsistencyLevel.ONE
+                )
+                
+                cassandra_db.session.execute(update_query, (event_id, country, user_id))
+            else:
+                # First kill for this user in this event
+                insert_query = SimpleStatement(
+                    """
+                    INSERT INTO horde_ranking 
+                    (event_id, country, user_id, user_name, email, n_killed) 
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    consistency_level=ConsistencyLevel.ONE
+                )
+                
+                cassandra_db.session.execute(
+                    insert_query,
+                    (event_id, country, user_id, user_name, email, 1)
+                )
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to record monster kill: {str(e)}")
+            raise e
