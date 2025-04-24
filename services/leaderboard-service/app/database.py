@@ -38,9 +38,45 @@ class CassandraDB:
             # Set keyspace
             self.session.set_keyspace(self.keyspace)
             
-            # Ejecutar archivos CQL
-            await self.execute_cql_file('cql/schema.cql')
-            logger.info("Schema CQL executed successfully")
+            # Crear tablas directamente
+            self.session.execute("""
+            CREATE TABLE IF NOT EXISTS hall_of_fame (
+              country text,
+              dungeon_id int,
+              year int,
+              month int,
+              email text,
+              user_name text,
+              minutes float,
+              date timestamp,
+              PRIMARY KEY ((country, dungeon_id, year, month), minutes, email)
+            ) WITH CLUSTERING ORDER BY (minutes ASC)
+            """)
+            
+            self.session.execute("""
+            CREATE TABLE IF NOT EXISTS player_stats (
+              email text,
+              year int,
+              dungeon_id int,
+              avg_minutes float,
+              completed_count int,
+              PRIMARY KEY ((email, year), dungeon_id)
+            )
+            """)
+            
+            self.session.execute("""
+            CREATE TABLE IF NOT EXISTS horde_ranking (
+              event_id int,
+              country text,
+              user_id int,
+              user_name text,
+              email text,
+              n_killed int,
+              PRIMARY KEY ((event_id, country), n_killed, user_id)
+            ) WITH CLUSTERING ORDER BY (n_killed DESC)
+            """)
+            
+            logger.info("Tables created successfully")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to Cassandra cluster: {str(e)}")
