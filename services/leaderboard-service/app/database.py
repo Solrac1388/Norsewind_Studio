@@ -65,7 +65,11 @@ class CassandraDB:
             )
             """)
             
-            # Modificar la tabla horde_ranking para que n_killed no sea parte de la clave primaria
+            try:
+                self.session.execute("DROP TABLE IF EXISTS horde_ranking")
+            except Exception as e:
+                logger.warning(f"Error dropping horde_ranking table: {str(e)}")
+            
             self.session.execute("""
             CREATE TABLE IF NOT EXISTS horde_ranking (
               event_id int,
