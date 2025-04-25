@@ -39,13 +39,18 @@ services:
       start_period: 60s
 
   mongodb:
-    image: mongo:latest
+    build:
+      context: ./
+      dockerfile: ./databases/mongodb/Dockerfile
     ports:
       - "27017:27017"
     volumes:
       - ./databases/mongodb/data:/data/db
+      - ./assets/collections:/docker-entrypoint-initdb.d/data
     environment:
       - MONGO_INITDB_DATABASE=jotun_wiki
+    networks:
+      - jotun-network
 
   redis:
     image: redis/redis-stack:latest
@@ -96,16 +101,21 @@ services:
       start_period: 40s
 
   wiki-service:
-    build: ./services/wiki-service
-    depends_on:
-      - mongodb
+    build:
+      context: ./services/wiki-service
+      dockerfile: ./Dockerfile
     ports:
       - "8083:8080"
+    depends_on:
+      - mongodb
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/jotun_wiki
+      - PORT=8080
     volumes:
       - ./services/wiki-service:/app
       - /app/node_modules
+    networks:
+      - jotun-network
 
   avatar-service:
     build: ./services/avatar-service
@@ -122,26 +132,6 @@ services:
       - ./services/avatar-service:/app
       - ./assets/avatars:/app/assets/avatars
       - ./assets:/app/assets
-      - /app/node_modules
-
-  # API Gateway
-  api-gateway:
-    build: ./services/api-gateway
-    ports:
-      - "8080:8080"
-    depends_on:
-      - editor-service
-      - leaderboard-service
-      - wiki-service
-      - avatar-service
-    environment:
-      - EDITOR_SERVICE_URL=http://editor-service:8080
-      - LEADERBOARD_SERVICE_URL=http://leaderboard-service:8080
-      - WIKI_SERVICE_URL=http://wiki-service:8080
-      - AVATAR_SERVICE_URL=http://avatar-service:8080
-      - JWT_SECRET=your-secret-key
-    volumes:
-      - ./services/api-gateway:/app
       - /app/node_modules
 
 volumes:

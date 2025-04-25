@@ -1,21 +1,31 @@
 {
-  "name": "wiki-service",
+  "name": "jotun-wiki-service",
   "version": "1.0.0",
-  "description": "Wiki service for The Jötun's Lair game",
-  "main": "app.js",
+  "description": "API REST para el servicio de Wiki de Jotun's Lair",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "wiki",
+    "jotun",
+    "api",
+    "mongodb",
+    "express",
+    "node"
+  ],
+  "author": "Norsewind Studio",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "mongoose": "^7.0.3",
+    "mongoose": "^7.5.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "helmet": "^6.0.1",
-    "jsonwebtoken": "^9.0.0"
+    "dotenv": "^16.3.1",
+    "helmet": "^7.0.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "^3.0.1"
   }
 }
