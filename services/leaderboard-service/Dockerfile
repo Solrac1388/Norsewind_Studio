@@ -17,15 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Crear directorios necesarios
 RUN mkdir -p cql
 
-# Crear usuario no privilegiado
-RUN useradd -m appuser
-USER appuser
-
-COPY --chown=appuser:appuser . .
-
-EXPOSE 8080
-
-# Crear script de inicio con lógica mejorada de espera
+# Crear script de inicio ANTES de cambiar de usuario
 RUN echo '#!/bin/bash \n\
 echo "Esperando a que Cassandra esté disponible..." \n\
 max_retries=30 \n\
@@ -42,5 +34,13 @@ done \n\
 echo "Cassandra está disponible, iniciando servicio" \n\
 exec uvicorn app.main:app --host 0.0.0.0 --port 8080 \n\
 ' > /app/start.sh && chmod +x /app/start.sh
+
+# Crear usuario no privilegiado
+RUN useradd -m appuser
+USER appuser
+
+COPY --chown=appuser:appuser . .
+
+EXPOSE 8080
 
 CMD ["/app/start.sh"]
