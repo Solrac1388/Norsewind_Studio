@@ -3,7 +3,7 @@ from services.neo4j_service import Neo4jService
 
 editor_bp = Blueprint('editor', __name__, url_prefix='/api/editor')
 
-@editor_bp.route('/loots/<int:loot_id>/rooms', methods=['GET'])
+@editor_bp.route('/loots/<loot_id>/rooms', methods=['GET'])
 def find_rooms_with_loot(loot_id):
     """
     1. Buscar todas las salas que contengan un tesoro en particular.
@@ -11,7 +11,7 @@ def find_rooms_with_loot(loot_id):
     result = Neo4jService.find_rooms_with_loot(loot_id)
     return jsonify(result)
 
-@editor_bp.route('/rooms/<int:room_id>/monsters', methods=['GET'])
+@editor_bp.route('/rooms/<room_id>/monsters', methods=['GET'])
 def get_monsters_in_room(room_id):
     """
     2. Obtener todos los monstruos que hay en una sala en particular.
@@ -79,7 +79,7 @@ def get_world_map():
     result = Neo4jService.get_world_map()
     return jsonify(result)
 
-@editor_bp.route('/dungeons/<string:dungeon_name>/gold', methods=['GET'])
+@editor_bp.route('/dungeons/<dungeon_name>/gold', methods=['GET'])
 def get_dungeon_gold(dungeon_name):
     """
     9. Calcular el total de oro que valen los tesoros de una mazmorra.
@@ -87,7 +87,7 @@ def get_dungeon_gold(dungeon_name):
     result = Neo4jService.get_dungeon_gold(dungeon_name)
     return jsonify(result)
 
-@editor_bp.route('/dungeons/<string:dungeon_name>/high-level-monsters', methods=['GET'])
+@editor_bp.route('/dungeons/<dungeon_name>/high-level-monsters', methods=['GET'])
 def get_high_level_monsters(dungeon_name):
     """
     10. Buscar las salas que contienen los monstruos de más nivel de la mazmorra.
@@ -95,7 +95,7 @@ def get_high_level_monsters(dungeon_name):
     result = Neo4jService.get_high_level_monsters(dungeon_name)
     return jsonify(result)
 
-@editor_bp.route('/dungeons/<string:dungeon_name>/encounters', methods=['GET'])
+@editor_bp.route('/dungeons/<dungeon_name>/encounters', methods=['GET'])
 def get_encounters_by_exp(dungeon_name):
     """
     11. Calcular la experiencia total de cada uno de los encuentros.
