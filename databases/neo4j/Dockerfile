@@ -1,12 +1,15 @@
-FROM neo4j:4.4
+FROM neo4j:5.13.0
 
-# Crear el script de inicialización directamente en el Dockerfile
+# Instalar plugin APOC
+ENV NEO4J_PLUGINS='["apoc"]'
+
+# Crear el script de inicialización
 RUN echo '#!/bin/bash \n\
 set -e \n\
 \n\
-if [ -f "/var/lib/neo4j/neo4j.dump" ]; then \n\
+if [ -f "/backups/neo4j.dump" ]; then \n\
     echo "Restaurando dump de Neo4j..." \n\
-    neo4j-admin load --from=/var/lib/neo4j/neo4j.dump --database=neo4j --force \n\
+    neo4j-admin database load neo4j --from-path=/backups --overwrite-destination=true \n\
     echo "Dump restaurado exitosamente" \n\
 fi \n\
 \n\

@@ -102,3 +102,17 @@ def get_encounters_by_exp(dungeon_name):
     """
     result = Neo4jService.get_encounters_by_exp(dungeon_name)
     return jsonify(result)
+
+@editor_bp.route('/areas', methods=['GET'])
+def get_all_areas():
+    """Obtener todas las áreas del juego"""
+    query = "MATCH (a:Area) RETURN a.name AS name"
+    result = Neo4jService.query(query)
+    return jsonify(result)
+
+@editor_bp.route('/dungeons', methods=['GET'])
+def get_all_dungeons():
+    """Obtener todas las mazmorras del juego"""
+    query = "MATCH (r:Room) RETURN DISTINCT r.dungeon_name AS name"
+    result = Neo4jService.query(query)
+    return jsonify(result)
