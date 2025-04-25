@@ -4,30 +4,25 @@ FROM neo4j:5.13.0
 ENV NEO4J_PLUGINS='["apoc"]'
 ENV NEO4J_dbms_security_procedures_unrestricted="apoc.*"
 
-# Copiar scripts
-COPY databases/neo4j/scripts/init-data.cypher /scripts/
+# Copiar script de inicialización Cypher
+COPY databases/neo4j/scripts/init-data.cypher /var/lib/neo4j/import/init-data.cypher
 
-# Crear script de inicialización
-RUN echo '#!/bin/bash \n\
-set -e \n\
-\n\
-if [ -f "/backups/neo4j.dump" ]; then \n\
-    echo "Restaurando dump de Neo4j..." \n\
-    neo4j-admin database load neo4j --from-path=/backups --overwrite-destination=true \n\
-    echo "Dump restaurado exitosamente" \n\
-else \n\
-    echo "Inicializando con datos de ejemplo..." \n\
-    mkdir -p /scripts \n\
-    /var/lib/neo4j/bin/neo4j start & \n\
-    echo "Esperando a Neo4j..." \n\
-    sleep 30 \n\
-    cat /scripts/init-data.cypher | cypher-shell -u neo4j -p password \n\
-    echo "Base de datos inicializada" \n\
-    /var/lib/neo4j/bin/neo4j stop \n\
-    sleep 5 \n\
-fi \n\
-\n\
-exec /docker-entrypoint.sh neo4j \n\
-' > /init-neo4j.sh && chmod +x /init-neo4j.sh
-
-ENTRYPOINT ["/init-neo4j.sh"]
+# Iniciar Neo4j directamente sin script intermedio
+ENTRYPOINT ["sh", "-c", "\
+if [ -f \"/backups/neo4j.dump\" ]; then \
+    echo \"Restaurando dump de Neo4j...\" && \
+    neo4j-admin database load neo4j --from-path=/backups --overwrite-destination=true && \
+    echo \"Dump restaurado exitosamente\"; \
+else \
+    echo \"Inicializando base de datos con datos de ejemplo...\"; \
+    # Iniciar proceso de Neo4j en segundo plano para ejecutar comandos\
+    neo4j start && \
+    sleep 20 && \
+    cypher-shell -u neo4j -p password --file /var/lib/neo4j/import/init-data.cypher && \
+    echo \"Base de datos inicializada\" && \
+    neo4j stop && \
+    sleep 5; \
+fi && \
+# Ejecutar Neo4j normalmente\
+exec neo4j console\
+"]
