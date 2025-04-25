@@ -34,10 +34,15 @@ class Neo4jService:
 
     @classmethod
     def query(cls, cypher, params=None):
-        driver = cls.get_driver()
-        with driver.session() as session:
-            result = session.run(cypher, params or {})
-            return [record.data() for record in result]
+        try:
+            driver = cls.get_driver()
+            with driver.session() as session:
+                result = session.run(cypher, params or {})
+                return [record.data() for record in result]
+        except Exception as e:
+            app.logger.error(f"Error en consulta Neo4j: {str(e)}")
+            # Re-lanzar como error HTTP 500 con detalles
+            raise Exception(f"Error de base de datos: {str(e)}")
 
     # Implementación de métodos específicos
     @classmethod
