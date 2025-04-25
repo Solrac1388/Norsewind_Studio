@@ -14,4 +14,4 @@ COPY --chown=appuser:appuser . .
 EXPOSE 8080
 
 # Ejecutar gunicorn con configuraciones de seguridad
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--limit-request-line", "8190", "--limit-request-fields", "100", "--limit-request-field-size", "8190", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--limit-request-line", "8190", "--limit-request-fields", "100", "app:app"]
