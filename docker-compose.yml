@@ -151,5 +151,5 @@ volumes:
   redis_data:
   
   networks:
-  jotun-network:
-    driver: bridge
+    jotun-network:
+      driver: bridge
