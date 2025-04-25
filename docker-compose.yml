@@ -3,12 +3,15 @@ version: '3.8'
 services:
   # Bases de datos
   neo4j:
-    image: neo4j:latest
+    build:
+      context: ./
+      dockerfile: ./databases/neo4j/Dockerfile
     ports:
       - "7474:7474"  # Interfaz web
       - "7687:7687"  # Protocolo Bolt
     volumes:
       - ./databases/neo4j/data:/data
+      - ./assets/dump/neo4j.dump:/var/lib/neo4j/neo4j.dump
     environment:
       - NEO4J_AUTH=neo4j/password
 
