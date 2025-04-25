@@ -150,6 +150,6 @@ volumes:
   mongo_data:
   redis_data:
   
-  networks:
-    jotun-network:
-      driver: bridge
+networks:
+  jotun-network:
+    driver: bridge
